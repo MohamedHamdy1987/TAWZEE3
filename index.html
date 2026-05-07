@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>سوق الجملة – نظام إدارة SaaS</title>
+<link rel="stylesheet" href="css/style.css">
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ================================================================
+     شاشة تسجيل الدخول
+     ================================================================ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="logo-icon">🥬</div>
+      <h1>سوق الجملة</h1>
+      <p>نظام إدارة متكامل للجملة</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="auth-tab-login">تسجيل الدخول</button>
+      <button class="auth-tab" id="auth-tab-signup">حساب جديد</button>
+    </div>
+
+    <!-- نموذج الدخول -->
+    <div id="login-form">
+      <div class="auth-error" id="login-error"></div>
+      <div class="form-group">
+        <label class="form-label">البريد الإلكتروني</label>
+        <input class="form-control" type="email" id="login-email" placeholder="example@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">كلمة المرور</label>
+        <input class="form-control" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" id="btn-login">
+        🔐 تسجيل الدخول
+      </button>
+    </div>
+
+    <!-- نموذج إنشاء حساب -->
+    <div id="signup-form" style="display:none">
+      <div class="auth-error" id="signup-error"></div>
+      <div class="form-group">
+        <label class="form-label">البريد الإلكتروني</label>
+        <input class="form-control" type="email" id="signup-email" placeholder="example@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">كلمة المرور (6 أحرف على الأقل)</label>
+        <input class="form-control" type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <button class="btn btn-success" style="width:100%;justify-content:center" id="btn-signup">
+        ✅ إنشاء حساب جديد
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     قشرة التطبيق الرئيسية
+     ================================================================ -->
+<div id="app-shell" style="display:none">
+
+  <!-- شريط التنقل العلوي -->
+  <nav class="topnav">
+    <div class="nav-tabs" id="mainTabs">
+      <button class="nav-tab active" data-page="page-home">🏠 الرئيسية</button>
+      <button class="nav-tab" data-page="page-customers">👥 العملاء</button>
+      <button class="nav-tab" data-page="page-suppliers">🤝 الموردين</button>
+      <button class="nav-tab" data-page="page-cashflow">💸 التحصيل</button>
+      <button class="nav-tab" data-page="page-audit">📋 السجل</button>
+    </div>
+    <div class="topnav-logo">
+      <div class="nav-user">
+        <span style="font-size:0.75rem;color:var(--text3)" id="nav-user-email"></span>
+        <button class="btn-logout" id="btn-logout">🚪 <span>خروج</span></button>
+      </div>
+      <span>🥬</span> سوق الجملة
+    </div>
+  </nav>
+
+  <!-- ============================================================
+       الصفحة الرئيسية
+       ============================================================ -->
+  <div class="page active" id="page-home">
+    <!-- لوحة التحكم -->
+    <div class="dashboard-header">
+      <div class="card-title" style="margin-bottom:0">📊 لوحة التحكم</div>
+      <div class="dashboard-date" id="dash-today-date"></div>
+    </div>
+
+    <div class="grid-4" style="margin-bottom:16px">
+      <div class="stat-box">
+        <div class="stat-val" id="dash-total-profit" style="color:var(--green)">0</div>
+        <div class="stat-lbl">💰 إجمالي الأرباح</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="dash-total-revenue">0</div>
+        <div class="stat-lbl">📈 إجمالي الإيرادات</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="dash-active-jobs">0</div>
+        <div class="stat-lbl">📦 الأشغال النشطة</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="dash-total-trucks">0</div>
+        <div class="stat-lbl">🚛 إجمالي العربيات</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-title">🔴 كبار المدينين</div>
+        <div id="dash-top-debtors">
+          <div class="empty-state"><div class="empty-state-text">لا توجد مديونيات</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚡ روابط سريعة</div>
+        <div class="grid-2" style="gap:8px">
+          <div class="card quick-nav" data-page="page-suppliers" style="padding:16px;margin-bottom:0">
+            <div style="font-size:1.8rem">🤝</div>
+            <div style="font-weight:700;font-size:0.85rem;color:var(--accent);margin-top:6px">الموردين</div>
+          </div>
+          <div class="card quick-nav" data-page="page-customers" style="padding:16px;margin-bottom:0">
+            <div style="font-size:1.8rem">👥</div>
+            <div style="font-weight:700;font-size:0.85rem;color:var(--accent);margin-top:6px">العملاء</div>
+          </div>
+          <div class="card quick-nav" data-page="page-cashflow" style="padding:16px;margin-bottom:0">
+            <div style="font-size:1.8rem">💸</div>
+            <div style="font-weight:700;font-size:0.85rem;color:var(--accent);margin-top:6px">التحصيل</div>
+          </div>
+          <div class="card quick-nav" data-page="page-audit" style="padding:16px;margin-bottom:0">
+            <div style="font-size:1.8rem">📋</div>
+            <div style="font-weight:700;font-size:0.85rem;color:var(--accent);margin-top:6px">السجل</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- النسخ الاحتياطي -->
+    <div style="display:flex;gap:8px;margin-bottom:15px;background:var(--surface3);padding:10px;border-radius:var(--radius-sm);border:1px dashed var(--accent)">
+      <button class="btn btn-secondary btn-sm" id="btn-export" style="flex:1">📥 حفظ نسخة احتياطية</button>
+      <button class="btn btn-secondary btn-sm" id="btn-import" style="flex:1">📤 استعادة نسخة</button>
+      <input type="file" id="importFile" style="display:none" accept=".json">
+    </div>
+
+    <!-- قائمة الأشغال -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">🏪 الأشغال الحالية</div>
+      <button class="btn btn-primary" id="addJobBtn">➕ إضافة شغل</button>
+    </div>
+    <div class="form-group">
+      <input type="text" class="form-control" id="mainSearch" placeholder="🔍 ابحث باسم المورد أو البلد أو نوع الشغل...">
+    </div>
+    <div id="jobs-list"></div>
+    <div id="jobs-empty" class="empty-state" style="display:none">
+      <div class="empty-state-icon">📦</div>
+      <div class="empty-state-text">لا توجد أشغال بعد</div>
+    </div>
+    <div id="jobs-pagination"></div>
+  </div>
+
+  <!-- ============================================================
+       صفحة الشغل (العربيات)
+       ============================================================ -->
+  <div class="page" id="page-job">
+    <div class="breadcrumb">
+      <span data-page="page-home">🏠 الرئيسية</span>
+      <span class="sep">›</span>
+      <span id="bc-job"></span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" id="job-detail-title" style="margin-bottom:0"></div>
+      <button class="btn btn-primary btn-sm" id="addTruckBtn">➕ إضافة عربية</button>
+    </div>
+    <div id="trucks-list"></div>
+    <div id="trucks-empty" class="empty-state" style="display:none">
+      <div class="empty-state-icon">🚛</div>
+      <div class="empty-state-text">لا توجد عربيات بعد</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       صفحة العربية
+       ============================================================ -->
+  <div class="page" id="page-truck">
+    <div class="breadcrumb">
+      <span data-page="page-home">🏠</span>
+      <span class="sep">›</span>
+      <span id="bc-job2" data-page="page-job" style="cursor:pointer"></span>
+      <span class="sep">›</span>
+      <span id="bc-truck"></span>
+    </div>
+    <div id="truck-content"></div>
+  </div>
+
+  <!-- ============================================================
+       صفحة العملاء
+       ============================================================ -->
+  <div class="page" id="page-customers">
+    <div class="card-title">👥 حسابات العملاء (الآجل)</div>
+    <div id="customers-list-render"></div>
+    <div id="customers-pagination"></div>
+  </div>
+
+  <!-- ============================================================
+       صفحة تفاصيل العميل
+       ============================================================ -->
+  <div class="page" id="page-customer-detail">
+    <div class="breadcrumb">
+      <span data-page="page-customers">👥 العملاء</span>
+      <span class="sep">›</span>
+      <span id="bc-customer"></span>
+    </div>
+    <div id="customer-ledger-render"></div>
+  </div>
+
+  <!-- ============================================================
+       صفحة الموردين
+       ============================================================ -->
+  <div class="page" id="page-suppliers">
+    <div class="card-title">🤝 حسابات الموردين</div>
+    <div id="suppliers-list-render"></div>
+  </div>
+
+  <!-- ============================================================
+       صفحة تفاصيل المورد
+       ============================================================ -->
+  <div class="page" id="page-supplier-detail">
+    <div class="breadcrumb">
+      <span data-page="page-suppliers">🤝 الموردين</span>
+      <span class="sep">›</span>
+      <span id="bc-supplier"></span>
+    </div>
+    <div id="supplier-detail-render"></div>
+  </div>
+
+  <!-- ============================================================
+       صفحة الكاش فلو
+       ============================================================ -->
+  <div class="page" id="page-cashflow">
+    <div class="card-title">💸 التحصيل والمصروفات</div>
+    <div class="grid-2">
+      <!-- تحصيل من عميل -->
+      <div class="card">
+        <div class="card-title" style="color:var(--green)">📥 التحصيلات (من العملاء)</div>
+        <div class="form-group">
+          <label class="form-label">اسم العميل</label>
+          <select class="form-control" id="cf-customer-sel"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">المبلغ (جنيه)</label>
+          <input class="form-control" type="number" id="cf-in-amount" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">التاريخ</label>
+          <input class="form-control" type="date" id="cf-in-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ملاحظات</label>
+          <input class="form-control" id="cf-in-notes" placeholder="اختياري">
+        </div>
+        <button class="btn btn-success" id="recordCollectionBtn">✅ تسجيل تحصيل</button>
+      </div>
+
+      <!-- دفع للمورد -->
+      <div class="card">
+        <div class="card-title" style="color:var(--red)">📤 المصروفات (للموردين)</div>
+        <div class="form-group">
+          <label class="form-label">اسم المورد / الشغل</label>
+          <select class="form-control" id="cf-supplier-sel"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">المبلغ (جنيه)</label>
+          <input class="form-control" type="number" id="cf-out-amount" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">التاريخ</label>
+          <input class="form-control" type="date" id="cf-out-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ملاحظات</label>
+          <input class="form-control" id="cf-out-notes" placeholder="اختياري">
+        </div>
+        <button class="btn btn-danger" id="recordPaymentBtn">✅ تسجيل دفع</button>
+      </div>
+    </div>
+
+    <!-- ملخص اليوم -->
+    <div class="card">
+      <div class="card-title">📊 ملخص اليوم</div>
+      <div class="grid-3">
+        <div class="stat-box">
+          <div class="stat-val" id="cf-total-in" style="color:var(--green)">0</div>
+          <div class="stat-lbl">💰 إجمالي التحصيلات</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="cf-total-out" style="color:var(--red)">0</div>
+          <div class="stat-lbl">💸 إجمالي المصروفات</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="cf-net"></div>
+          <div class="stat-lbl">🧮 الصافي</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- سجل المعاملات -->
+    <div class="card">
+      <div class="card-title">📋 سجل المعاملات</div>
+      <div id="cf-log"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       صفحة سجل الأحداث
+       ============================================================ -->
+  <div class="page" id="page-audit">
+    <div class="card-title">📋 سجل أحداث النظام</div>
+    <div class="card">
+      <div id="audit-log-render">
+        <div class="empty-state"><div class="empty-state-text">لا توجد سجلات</div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-shell -->
+
+<!-- ================================================================
+     المودالات
+     ================================================================ -->
+
+<!-- إضافة شغل -->
+<div class="modal-overlay" id="modal-add-job">
+  <div class="modal">
+    <div class="modal-title">
+      ➕ إضافة شغل جديد
+      <button class="modal-close" data-modal="modal-add-job">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">نوع الشغل</label>
+      <select class="form-control" id="job-type">
+        <option value="تشكيلة">تشكيلة</option>
+        <option value="صنف واحد">صنف واحد</option>
+        <option value="صَبّة">صَبّة</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">لحساب من؟</label>
+      <select class="form-control" id="job-ownership">
+        <option value="لحسابنا">لحسابنا</option>
+        <option value="لحساب المورد">لحساب المورد</option>
+      </select>
+    </div>
+    <hr class="separator">
+    <div class="card-title" style="margin-bottom:12px">👤 بيانات المورد</div>
+    <div class="form-group">
+      <label class="form-label">اسم المورد <span style="color:var(--red)">*</span></label>
+      <input class="form-control" id="job-supplier" placeholder="مثال: حاج أحمد">
+    </div>
+    <div class="form-group">
+      <label class="form-label">البلد (مكان الشراء) <span style="color:var(--red)">*</span></label>
+      <input class="form-control" id="job-city" placeholder="مثال: الإسكندرية">
+    </div>
+    <div class="form-group">
+      <label class="form-label">رقم التليفون</label>
+      <input class="form-control" id="job-phone" placeholder="01xxxxxxxxx" type="tel">
+    </div>
+    <div class="form-group">
+      <label class="form-label">طريقة الدفع</label>
+      <select class="form-control" id="job-payment">
+        <option value="بنك">بنك</option>
+        <option value="بريد">بريد</option>
+        <option value="فودافون كاش">فودافون كاش</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">نسبة الشراكة (%) <span style="color:var(--red)">*</span></label>
+      <input class="form-control" id="job-share" type="number" value="50" min="1" max="100" placeholder="50">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-add-job">إلغاء</button>
+      <button class="btn btn-primary" id="confirmAddJob">✅ إنشاء الشغل</button>
+    </div>
+  </div>
+</div>
+
+<!-- إضافة عربية -->
+<div class="modal-overlay" id="modal-add-truck">
+  <div class="modal">
+    <div class="modal-title">
+      🚛 إضافة عربية جديدة
+      <button class="modal-close" data-modal="modal-add-truck">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">تاريخ التحميل</label>
+      <input class="form-control" type="date" id="truck-load-date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">تاريخ التوزيع</label>
+      <input class="form-control" type="date" id="truck-dist-date">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-add-truck">إلغاء</button>
+      <button class="btn btn-primary" id="confirmAddTruck">✅ إضافة</button>
+    </div>
+  </div>
+</div>
+
+<!-- إضافة/تعديل صنف (مشتريات) -->
+<div class="modal-overlay" id="modal-add-item">
+  <div class="modal">
+    <div class="modal-title">
+      🧾 إضافة/تعديل صنف
+      <button class="modal-close" data-modal="modal-add-item">✕</button>
+    </div>
+    <input type="hidden" id="item-editing-id">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">العدد (طرود) <span style="color:var(--red)">*</span></label>
+        <input class="form-control" type="number" id="item-count" placeholder="0" min="1" data-oninput-item>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الصنف <span style="color:var(--red)">*</span></label>
+        <input class="form-control" id="item-name" placeholder="مثال: عنب">
+      </div>
+      <div class="form-group">
+        <label class="form-label">نوع الوحدة</label>
+        <select class="form-control" id="item-unit-type">
+          <option value="weight">بالوزن (كيلو)</option>
+          <option value="unit">بالوحدة (قطعة)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الوزن (كيلو) أو العدد</label>
+        <input class="form-control" type="number" id="item-weight-or-count" placeholder="0" min="0" step="0.01" data-oninput-item>
+      </div>
+      <div class="form-group">
+        <label class="form-label">السعر (ج/كيلو أو ج/وحدة) <span style="color:var(--red)">*</span></label>
+        <input class="form-control" type="number" id="item-price" placeholder="0" min="0" step="0.01" data-oninput-item>
+      </div>
+      <div class="form-group">
+        <label class="form-label">البياعة (جنيه)</label>
+        <input class="form-control" type="number" id="item-bai3a" placeholder="0" min="0" data-oninput-item>
+      </div>
+    </div>
+    <div class="big-total" style="padding:12px">
+      <div class="big-total-lbl">الثمن المحسوب</div>
+      <div class="big-total-val" id="item-total-display">0 ج</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-add-item">إلغاء</button>
+      <button class="btn btn-primary" id="confirmAddItem">✅ حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- إضافة/تعديل المصاريف -->
+<div class="modal-overlay" id="modal-add-expense">
+  <div class="modal">
+    <div class="modal-title">
+      💸 مصاريف العربية
+      <button class="modal-close" data-modal="modal-add-expense">✕</button>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">نولون</label>
+        <input class="form-control" type="number" id="exp-noloon" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">مصاريف</label>
+        <input class="form-control" type="number" id="exp-masareef" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">مشال</label>
+        <input class="form-control" type="number" id="exp-mashal" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">رص</label>
+        <input class="form-control" type="number" id="exp-ras" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">بوابة</label>
+        <input class="form-control" type="number" id="exp-gate" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">نثريات</label>
+        <input class="form-control" type="number" id="exp-misc" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="big-total" style="padding:12px">
+      <div class="big-total-lbl">إجمالي المصاريف</div>
+      <div class="big-total-val" id="exp-total-display">0</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-add-expense">إلغاء</button>
+      <button class="btn btn-primary" id="confirmAddExpense">✅ حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- إضافة/تعديل عميل توزيع -->
+<div class="modal-overlay" id="modal-add-client">
+  <div class="modal modal-lg">
+    <div class="modal-title">
+      👤 إضافة/تعديل عميل للتوزيع
+      <button class="modal-close" data-modal="modal-add-client">✕</button>
+    </div>
+    <input type="hidden" id="client-editing-id">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">اسم العميل <span style="color:var(--red)">*</span></label>
+        <input class="form-control" id="client-name" placeholder="الاسم">
+      </div>
+      <div class="form-group">
+        <label class="form-label">البلد</label>
+        <input class="form-control" id="client-city" placeholder="المدينة">
+      </div>
+      <div class="form-group">
+        <label class="form-label">نوع الدفع</label>
+        <select class="form-control" id="client-payment-type">
+          <option value="نقدي">نقدي</option>
+          <option value="آجل">آجل</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">نولون (جنيه)</label>
+        <input class="form-control" type="number" id="client-noloon" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">مشال (جنيه)</label>
+        <input class="form-control" type="number" id="client-mashal" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="card-title" style="margin-top:8px;margin-bottom:8px">🛒 الأصناف</div>
+    <div id="client-items-form"></div>
+    <button class="btn btn-ghost btn-sm" id="addClientItemRowBtn" style="margin-bottom:12px">➕ إضافة صنف</button>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-add-client">إلغاء</button>
+      <button class="btn btn-primary" id="confirmAddClient">✅ حفظ العميل</button>
+    </div>
+  </div>
+</div>
+
+<!-- تفاصيل فاتورة عميل -->
+<div class="modal-overlay" id="modal-client-detail">
+  <div class="modal modal-lg">
+    <div class="modal-title">
+      🧾 تفاصيل فاتورة: <span id="detail-client-name"></span>
+      <button class="modal-close" data-modal="modal-client-detail">✕</button>
+    </div>
+    <div id="client-detail-table"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-client-detail">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- مصاريفنا على العربية -->
+<div class="modal-overlay" id="modal-our-expenses">
+  <div class="modal">
+    <div class="modal-title">
+      💰 مصاريفنا على العربية
+      <button class="modal-close" data-modal="modal-our-expenses">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">إجمالي مصاريفنا (جنيه)</label>
+      <input class="form-control" type="number" id="our-expenses-val" placeholder="0" min="0">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-our-expenses">إلغاء</button>
+      <button class="btn btn-primary" id="confirmOurExpenses">✅ حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- دفعة من عميل (من صفحة تفاصيل العميل) -->
+<div class="modal-overlay" id="modal-customer-payment">
+  <div class="modal">
+    <div class="modal-title">
+      💰 تسجيل دفعة من عميل
+      <button class="modal-close" data-modal="modal-customer-payment">✕</button>
+    </div>
+    <input type="hidden" id="cp-customer-name">
+    <div class="form-group">
+      <label class="form-label">المبلغ (جنيه) <span style="color:var(--red)">*</span></label>
+      <input class="form-control" type="number" id="cp-amount" placeholder="0" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">التاريخ</label>
+      <input class="form-control" type="date" id="cp-date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">ملاحظات</label>
+      <input class="form-control" id="cp-notes" placeholder="اختياري">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal="modal-customer-payment">إلغاء</button>
+      <button class="btn btn-primary" id="confirmCustomerPayment">✅ تسجيل</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     عناصر مشتركة
+     ================================================================ -->
+<div id="toast-container"></div>
+
+<div id="global-loader">
+  <div class="loader-spinner"></div>
+  <div class="loader-text">جارٍ التحميل...</div>
+</div>
+
+<!-- إظهار تاريخ اليوم في الـ Dashboard -->
+<script>
+  const d = document.getElementById('dash-today-date');
+  if (d) d.textContent = new Date().toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+</script>
+
+<!-- تحميل التطبيق كـ ES Module -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
