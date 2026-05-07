@@ -2,8 +2,8 @@
 //  config.js – إعدادات Supabase والثوابت العامة
 // ================================================================
 
-export const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-export const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+export const SUPABASE_URL = 'https://rqbcutturzlcolytvmzf.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxYmN1dHR1cnpsY29seXR2bXpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMzQ0NDgsImV4cCI6MjA5MzcxMDQ0OH0.6w-IGjdJBfRnjwq8PFye-VpIKAdkDVWxaZwMLAhyAJE';
 
 // حجم الصفحة الافتراضي للقوائم المُقسّمة
 export const PAGE_SIZE = 20;
